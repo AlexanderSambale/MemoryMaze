@@ -10,21 +10,28 @@ This is a memory game where the user has to remember and click on a randomly gen
     *   Adjustable grid size (width and height).
     *   Adjustable path length.
     *   Random path generation.
+
 *   **Gameplay:**
     *   Step-by-step visual presentation of the path to the user.
     *   User interaction to click the path in the correct order.
     *   Visual feedback for correct and incorrect clicks.
+
 *   **Controls:**
     *   A "Start Game" button to begin the game.
     *   A "Reset Game" button to start a new game.
     *   Clear and accessible labels for all input controls.
+
 *   **UI/UX:**
     *   A "Game Over" dialog that displays the final score and win/loss status.
     *   A "Play Again" button in the dialog to quickly restart.
+    *   A borderless grid for a cleaner look.
+    *   Custom hover effects: correctly clicked tiles turn orange on hover.
+
+*   **Grid Shape Selection:**
+    *   Users can choose between a rectangular and a hexagonal grid.
+    *   Path generation and rendering adapts to the selected grid shape.
+    *   The UI provides a dropdown menu for grid shape selection.
 
 ## Current Plan
 
-1.  **Implement a Hexagonal Grid Option:**
-    *   Add a UI control (dropdown menu) to allow users to select the grid shape (square or hexagon).
-    *   Update the path generation logic to correctly identify neighbors on a hexagonal grid (6 neighbors instead of 4).
-    *   Implement new CSS styles to render the grid cells as hexagons and arrange them in a staggered layout.
+(No new changes requested)
