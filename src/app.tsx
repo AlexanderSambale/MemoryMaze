@@ -9,6 +9,7 @@ type Cell = {
 const gridWidth = signal(10);
 const gridHeight = signal(10);
 const pathLength = signal(10);
+const gridShape = signal<'rectangular' | 'hexagonal'>('hexagonal');
 const grid = signal<Cell[][]>([]);
 const path = signal<Cell[]>([]);
 const userPath = signal<Cell[]>([]);
@@ -48,28 +49,37 @@ const generatePath = () => {
       attempts = 0;
     }
 
-    const directions = [];
-    const isEvenRow = currentRow % 2 === 0;
+    let directions: number[][] = [];
+    if (gridShape.value === 'rectangular') {
+        if (currentRow > 0) directions.push([-1, 0]);
+        if (currentRow < gridHeight.value - 1) directions.push([1, 0]);
+        if (currentCol > 0) directions.push([0, -1]);
+        if (currentCol < gridWidth.value - 1) directions.push([0, 1]);
+    } else { // hexagonal
+        const isEvenRow = currentRow % 2 === 0;
 
-    // Standard directions
-    if (currentRow > 0) directions.push([-1, 0]);
-    if (currentRow < gridHeight.value - 1) directions.push([1, 0]);
-    if (currentCol > 0) directions.push([0, -1]);
-    if (currentCol < gridWidth.value - 1) directions.push([0, 1]);
+        // Standard directions
+        if (currentRow > 0) directions.push([-1, 0]);
+        if (currentRow < gridHeight.value - 1) directions.push([1, 0]);
+        if (currentCol > 0) directions.push([0, -1]);
+        if (currentCol < gridWidth.value - 1) directions.push([0, 1]);
 
-    // Diagonal directions based on row parity
-    if (isEvenRow) {
-      if (currentRow > 0 && currentCol > 0) directions.push([-1, -1]);
-      if (currentRow < gridHeight.value - 1 && currentCol > 0) directions.push([1, -1]);
-    } else {
-      if (currentRow > 0 && currentCol < gridWidth.value - 1) directions.push([-1, 1]);
-      if (currentRow < gridHeight.value - 1 && currentCol < gridWidth.value - 1) directions.push([1, 1]);
+        // Diagonal directions based on row parity
+        if (isEvenRow) {
+          if (currentRow > 0 && currentCol > 0) directions.push([-1, -1]);
+          if (currentRow < gridHeight.value - 1 && currentCol > 0) directions.push([1, -1]);
+        } else {
+          if (currentRow > 0 && currentCol < gridWidth.value - 1) directions.push([-1, 1]);
+          if (currentRow < gridHeight.value - 1 && currentCol < gridWidth.value - 1) directions.push([1, 1]);
+        }
     }
 
     const validDirections = directions.filter(dir => {
       const nextRow = currentRow + dir[0];
       const nextCol = currentCol + dir[1];
-      return !newPath.some(c => c.row === nextRow && c.col === nextCol);
+      return !newPath.some(c => c.row === nextRow && c.col === nextCol) &&
+             nextRow >= 0 && nextRow < gridHeight.value &&
+             nextCol >= 0 && nextCol < gridWidth.value;
     });
 
     if (validDirections.length === 0) {
@@ -163,6 +173,22 @@ export function App() {
   const onPathLengthChange = (e) => {
     pathLength.value = parseInt(e.target.value, 10);
   }
+
+  const onGridShapeChange = (e) => {
+    gridShape.value = e.target.value;
+    generateGrid();
+  }
+
+  const cellClass = (cell: Cell) => {
+    const isUserPath = userPath.value.some(
+      (pathCell) => pathCell.row === cell.row && pathCell.col === cell.col
+    );
+    let classes = 'cell';
+    if (isUserPath) {
+      classes += ' correct';
+    }
+    return classes;
+  }
   
   const getHexagonClass = (cell: Cell) => {
     const isUserPath = userPath.value.some(
@@ -177,7 +203,7 @@ export function App() {
 
   return (
     <div class="game-container">
-      <h1>Hexagonal Path Memory Game</h1>
+      <h1>Path Memory Game</h1>
       {!gameStarted.value ? (
         <div class="controls setup">
           <div class="input-control">
@@ -192,6 +218,13 @@ export function App() {
             <label for="path">Path Length:</label>
             <input type="number" id="path" value={pathLength.value} onInput={onPathLengthChange} />
           </div>
+          <div class="input-control">
+            <label for="grid-shape">Shape:</label>
+            <select id="grid-shape" value={gridShape.value} onChange={onGridShapeChange}>
+              <option value="rectangular">Rectangular</option>
+              <option value="hexagonal">Hexagonal</option>
+            </select>
+          </div>
         </div>
       ) : null}
       <div class="controls">
@@ -199,12 +232,24 @@ export function App() {
         <button onClick={resetGame} disabled={!gameStarted.value}>Reset Game</button>
       </div>
       {gameStarted.value ? (
-        <div class="grid">
+        <div 
+          class={`grid ${gridShape.value}`}
+          style={gridShape.value === 'rectangular' ? { gridTemplateColumns: `repeat(${gridWidth.value}, 40px)`, gridTemplateRows: `repeat(${gridHeight.value}, 40px)` } : { width: `calc(${gridWidth.value} * (var(--s) + var(--m)))`, gridTemplateColumns: `repeat(${gridWidth.value}, calc(var(--s) + var(--m)))` }}
+        >
           {grid.value.map((row) =>
             row.map((cell) => (
-              <div class="hexagon-container" onClick={() => handleCellClick(cell)} style={{ marginLeft: cell.row % 2 === 1 ? 'calc(var(--s) / 2 + var(--m))' : '0' }}>
-                <div class={getHexagonClass(cell)} data-row={cell.row} data-col={cell.col} />
-              </div>
+              gridShape.value === 'hexagonal' ? (
+                <div class="hexagon-container" onClick={() => handleCellClick(cell)} style={{ marginLeft: cell.row % 2 === 1 ? 'calc(var(--s) / 2 + var(--m))' : '0' }}>
+                  <div class={getHexagonClass(cell)} data-row={cell.row} data-col={cell.col} />
+                </div>
+              ) : (
+                <div
+                  class={cellClass(cell)}
+                  data-row={cell.row}
+                  data-col={cell.col}
+                  onClick={() => handleCellClick(cell)}
+                />
+              )
             ))
           )}
         </div>
