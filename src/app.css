@@ -103,10 +103,6 @@ button:disabled {
   transition: background-color 0.2s;
 }
 
-.cell:hover {
-  background-color: #ddd;
-}
-
 .cell.path {
   background-color: #87CEEB;
 }
@@ -132,10 +128,6 @@ button:disabled {
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-.hexagon-container:hover .hexagon {
-  background-color: #ddd;
 }
 
 .hexagon-container:hover .hexagon.correct {
