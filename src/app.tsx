@@ -1,4 +1,3 @@
-
 import { signal } from "@preact/signals";
 import './app.css';
 
@@ -40,9 +39,8 @@ const generatePath = () => {
   let attempts = 0;
   while (newPath.length < pathLength.value) {
     attempts++;
-    if (attempts > 1000) { // Avoid infinite loops
+    if (attempts > 1000) { 
       console.error("Failed to generate a path with the given constraints.");
-      // Reset and try again
       newPath.length = 0;
       currentRow = Math.floor(Math.random() * gridHeight.value);
       currentCol = Math.floor(Math.random() * gridWidth.value);
@@ -51,13 +49,30 @@ const generatePath = () => {
     }
 
     const directions = [];
-    if (currentRow > 0 && !newPath.some(c => c.row === currentRow - 1 && c.col === currentCol)) directions.push([-1, 0]);
-    if (currentRow < gridHeight.value - 1 && !newPath.some(c => c.row === currentRow + 1 && c.col === currentCol)) directions.push([1, 0]);
-    if (currentCol > 0 && !newPath.some(c => c.row === currentRow && c.col === currentCol - 1)) directions.push([0, -1]);
-    if (currentCol < gridWidth.value - 1 && !newPath.some(c => c.row === currentRow && c.col === currentCol + 1)) directions.push([0, 1]);
+    const isEvenRow = currentRow % 2 === 0;
 
-    if (directions.length === 0) {
-      // Path is blocked, restart from a new random cell
+    // Standard directions
+    if (currentRow > 0) directions.push([-1, 0]);
+    if (currentRow < gridHeight.value - 1) directions.push([1, 0]);
+    if (currentCol > 0) directions.push([0, -1]);
+    if (currentCol < gridWidth.value - 1) directions.push([0, 1]);
+
+    // Diagonal directions based on row parity
+    if (isEvenRow) {
+      if (currentRow > 0 && currentCol > 0) directions.push([-1, -1]);
+      if (currentRow < gridHeight.value - 1 && currentCol > 0) directions.push([1, -1]);
+    } else {
+      if (currentRow > 0 && currentCol < gridWidth.value - 1) directions.push([-1, 1]);
+      if (currentRow < gridHeight.value - 1 && currentCol < gridWidth.value - 1) directions.push([1, 1]);
+    }
+
+    const validDirections = directions.filter(dir => {
+      const nextRow = currentRow + dir[0];
+      const nextCol = currentCol + dir[1];
+      return !newPath.some(c => c.row === nextRow && c.col === nextCol);
+    });
+
+    if (validDirections.length === 0) {
       newPath.length = 0;
       currentRow = Math.floor(Math.random() * gridHeight.value);
       currentCol = Math.floor(Math.random() * gridWidth.value);
@@ -65,7 +80,7 @@ const generatePath = () => {
       continue;
     }
 
-    const move = directions[Math.floor(Math.random() * directions.length)];
+    const move = validDirections[Math.floor(Math.random() * validDirections.length)];
     currentRow += move[0];
     currentCol += move[1];
     newPath.push({ row: currentRow, col: currentCol });
@@ -132,14 +147,6 @@ const handleCellClick = (cell: Cell) => {
   }
 };
 
-const cellClass = (cell: Cell) => {
-  const isUserPath = userPath.value.some(
-    (pathCell) => pathCell.row === cell.row && pathCell.col === cell.col
-  );
-  if (isUserPath) return 'cell correct';
-  return 'cell';
-}
-
 export function App() {
   if(grid.value.length === 0) generateGrid();
 
@@ -156,10 +163,21 @@ export function App() {
   const onPathLengthChange = (e) => {
     pathLength.value = parseInt(e.target.value, 10);
   }
+  
+  const getHexagonClass = (cell: Cell) => {
+    const isUserPath = userPath.value.some(
+      (pathCell) => pathCell.row === cell.row && pathCell.col === cell.col
+    );
+    let classes = 'hexagon';
+    if (isUserPath) {
+      classes += ' correct';
+    }
+    return classes;
+  }
 
   return (
     <div class="game-container">
-      <h1>Path Memory Game</h1>
+      <h1>Hexagonal Path Memory Game</h1>
       {!gameStarted.value ? (
         <div class="controls setup">
           <div class="input-control">
@@ -181,15 +199,12 @@ export function App() {
         <button onClick={resetGame} disabled={!gameStarted.value}>Reset Game</button>
       </div>
       {gameStarted.value ? (
-        <div class="grid" style={{ gridTemplateColumns: `repeat(${gridWidth.value}, 40px)`, gridTemplateRows: `repeat(${gridHeight.value}, 40px)` }}>
+        <div class="grid">
           {grid.value.map((row) =>
             row.map((cell) => (
-              <div
-                class={cellClass(cell)}
-                data-row={cell.row}
-                data-col={cell.col}
-                onClick={() => handleCellClick(cell)}
-              />
+              <div class="hexagon-container" onClick={() => handleCellClick(cell)} style={{ marginLeft: cell.row % 2 === 1 ? 'calc(var(--s) / 2 + var(--m))' : '0' }}>
+                <div class={getHexagonClass(cell)} data-row={cell.row} data-col={cell.col} />
+              </div>
             ))
           )}
         </div>
